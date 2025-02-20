@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Tic-Tac-Toe</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            font-family: 'VT323', monospace;
+            text-align: center;
+            background-color: #000066;
+            color: #00ffff;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Welcome Screen */
+        .welcome-container {
+            position: fixed;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: black;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .typing-text {
+            font-size: 3em;
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 3px solid #00ffff;
+            width: 0;
+            animation: typing 2s steps(15, end) forwards, blink 1s infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 320px; }
+        }
+
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+
+        /* Hide Welcome Screen */
+        .hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Game Container */
+        .game-container {
+            width: 400px;
+            background: #000044;
+            border: 8px ridge #00ffff;
+            margin: auto;
+            padding: 20px;
+            box-shadow: inset 0 0 15px #00ffff;
+            position: relative;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .title-bar {
+            background: #00ffff;
+            color: black;
+            padding: 10px;
+            text-align: left;
+            font-size: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px auto;
+            width: 320px;
+            border: 5px solid #00ffff;
+            padding: 10px;
+            position: relative;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            width: 100px;
+            height: 100px;
+            background: black;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            cursor: pointer;
+            box-shadow: inset 0 0 5px #00ffff;
+        }
+
+        .cell.taken {
+            pointer-events: none;
+        }
+
+        .win-line {
+            position: absolute;
+            width: 0;
+            height: 5px;
+            background-color: red;
+            transition: width 0.5s ease-in-out;
+            transform-origin: left;
+            z-index: 2;
+        }
+
+        #status {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            margin-top: 10px;
+            cursor: pointer;
+            background: black;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 5px #00ffff;
+            font-family: 'VT323', monospace;
+        }
+
+        button:hover {
+            background: #00ffff;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Welcome Screen -->
+    <div class="welcome-container" id="welcome">
+        <div class="typing-text">Welcome to Tic-Tac-Toe</div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container" id="game">
+        <div class="title-bar">TIC-TAC-TOE - 80s Vintage</div>
+        <div id="status">Player X's turn</div>
+        <div class="board" id="board"></div>
+        <button onclick="restartGame()">Restart Game</button>
+    </div>
+
+    <script>
+        // Welcome Page Transition
+        setTimeout(() => {
+            document.getElementById("welcome").classList.add("hide");
+            setTimeout(() => {
+                document.getElementById("welcome").style.display = "none";
+                document.getElementById("game").style.display = "block";
+            }, 1500);
+        }, 2500); // Wait for typing effect + extra delay
+
+        let currentPlayer = 'X';
+        let gameBoard = Array(9).fill("");
+        let winLine = document.createElement("div");
+        winLine.classList.add("win-line");
+
+        function createBoard() {
+            const board = document.getElementById("board");
+            board.innerHTML = "";
+            board.appendChild(winLine);
+            winLine.style.width = "0";
+            gameBoard = Array(9).fill("");
+            gameBoard.forEach((_, index) => {
+                const cellElement = document.createElement("div");
+                cellElement.classList.add("cell");
+                cellElement.dataset.index = index;
+                cellElement.addEventListener("click", handleMove);
+                board.appendChild(cellElement);
+            });
+        }
+
+        function playBeep(frequency, duration) {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            oscillator.type = "square";
+            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+            oscillator.connect(context.destination);
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), duration);
+        }
+
+        function handleMove(event) {
+            const index = event.target.dataset.index;
+            if (gameBoard[index] !== "") return;
+            gameBoard[index] = currentPlayer;
+            event.target.innerText = currentPlayer;
+            event.target.classList.add("taken");
+
+            if (checkWin()) {
+                document.getElementById("status").innerText = `Player ${currentPlayer} Wins!`;
+                playBeep(400, 150);
+                setTimeout(() => playBeep(600, 150), 200);
+                return;
+            }
+
+            if (gameBoard.every(cell => cell !== "")) {
+                document.getElementById("status").innerText = "It's a Draw!";
+                playBeep(300, 300);
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            document.getElementById("status").innerText = `Player ${currentPlayer}'s turn`;
+        }
+
+        function checkWin() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                    drawWinLine(pattern);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function restartGame() {
+            currentPlayer = 'X';
+            document.getElementById("status").innerText = "Player X's turn";
+            createBoard();
+        }
+
+        function drawWinLine(pattern) {
+            const board = document.getElementById("board");
+            board.appendChild(winLine);
+            winLine.style.width = "100%";
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
